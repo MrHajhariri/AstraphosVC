@@ -12,6 +12,7 @@
 #include "objects/avc_object.h"
 #include "refs/avc_refs.h"
 #include "repository/avc_repository.h"
+#include "transport/avc_remote.h"
 #include "utils/avc_error.h"
 #include "utils/avc_fs.h"
 #include "utils/avc_log.h"

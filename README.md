@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 6 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison). Packfiles, remotes, and Git compatibility are designed but not yet implemented.
+Current status: Phase 8 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison) + Phase 7 (diff engine: unified diff, tree comparison) + Phase 8 (remote repos: add/list/remove remotes, fetch, push, pull). Packfiles and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -95,6 +95,10 @@ astraphosvc branch
 astraphosvc branch feature-x
 astraphosvc checkout feature-x
 astraphosvc merge feature-x
+astraphosvc remote add origin /path/to/repo
+astraphosvc push origin main
+astraphosvc fetch origin
+astraphosvc pull origin main
 ```
 
 Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in `docs/cli-reference.md` but intentionally return an error until their phases are implemented.
@@ -110,6 +114,8 @@ Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in
 | Commits & refs | Implemented | Phase 4. |
 | Branching | Implemented | Phase 5. |
 | Merge engine | Implemented | Phase 6. |
+| Diff engine | Implemented | Phase 7. |
+| Remote repos | Implemented | Phase 8. |
 | Git packfiles | Planned | Phase 9 target. |
 | Git protocol | Planned | Phase 8 and Phase 10 target. |
 
@@ -140,6 +146,12 @@ Implemented:
 - `astraphosvc checkout <branch>` — switch to a branch
 - Branch ref management (create, list, switch, delete)
 - `astraphosvc merge <branch>` — merge a branch into current
+- `astraphosvc remote` — list remotes
+- `astraphosvc remote add <name> <url>` — add a remote
+- `astraphosvc remote remove <name>` — remove a remote
+- `astraphosvc fetch <remote>` — fetch objects and refs from remote
+- `astraphosvc push <remote> <branch>` — push objects and refs to remote
+- `astraphosvc pull <remote> <branch>` — fetch + merge from remote
 - Fast-forward merge detection
 - Merge-base (LCA) computation
 - Three-way tree comparison
@@ -151,7 +163,7 @@ Planned:
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching; Phase 6 added merge.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching; Phase 6 added merge; Phase 7 added diff; Phase 8 added remotes.
 
 ## FAQ
 

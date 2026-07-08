@@ -19,6 +19,7 @@ CORE_SRC = \
 	objects/avc_object.c \
 	refs/avc_refs.c \
 	repository/avc_repository.c \
+	transport/avc_remote.c \
 	utils/avc_error.c \
 	utils/avc_fs.c \
 	utils/avc_log.c
@@ -31,6 +32,7 @@ TEST4_SRC = tests/unit/test_phase4.c
 TEST5_SRC = tests/unit/test_phase5.c
 TEST6_SRC = tests/unit/test_phase6.c
 TEST7_SRC = tests/unit/test_phase7.c
+TEST8_SRC = tests/unit/test_phase8.c
 
 CORE_OBJ = $(CORE_SRC:%.c=$(BUILD_DIR)/%.o)
 CLI_OBJ = $(CLI_SRC:%.c=$(BUILD_DIR)/%.o)
@@ -41,6 +43,7 @@ TEST4_OBJ = $(TEST4_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST5_OBJ = $(TEST5_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST6_OBJ = $(TEST6_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST7_OBJ = $(TEST7_SRC:%.c=$(BUILD_DIR)/%.o)
+TEST8_OBJ = $(TEST8_SRC:%.c=$(BUILD_DIR)/%.o)
 
 all: build
 
@@ -70,11 +73,14 @@ $(BUILD_DIR)/test_phase6: $(CORE_OBJ) $(TEST6_OBJ)
 $(BUILD_DIR)/test_phase7: $(CORE_OBJ) $(TEST7_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+$(BUILD_DIR)/test_phase8: $(CORE_OBJ) $(TEST8_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/test_phase5 $(BUILD_DIR)/test_phase6 $(BUILD_DIR)/test_phase7 $(BUILD_DIR)/astraphosvc
+test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/test_phase5 $(BUILD_DIR)/test_phase6 $(BUILD_DIR)/test_phase7 $(BUILD_DIR)/test_phase8 $(BUILD_DIR)/astraphosvc
 	$(BUILD_DIR)/test_phase1
 	$(BUILD_DIR)/test_phase2
 	$(BUILD_DIR)/test_phase3
@@ -82,6 +88,7 @@ test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3
 	$(BUILD_DIR)/test_phase5
 	$(BUILD_DIR)/test_phase6
 	$(BUILD_DIR)/test_phase7
+	$(BUILD_DIR)/test_phase8
 	sh tests/integration/test_phase1_cli.sh $(BUILD_DIR)/astraphosvc
 
 install: build

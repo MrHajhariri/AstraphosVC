@@ -26,6 +26,12 @@ static void print_help(void) {
     puts("  checkout <branch>       Switch to a branch");
     puts("  merge <branch>          Merge a branch into the current branch");
     puts("  diff [path]             Show working tree diff");
+    puts("  remote                  List configured remotes");
+    puts("  remote add <name> <url> Add a remote");
+    puts("  remote remove <name>    Remove a remote");
+    puts("  fetch <remote>          Fetch from a remote");
+    puts("  push <remote> <branch>  Push to a remote");
+    puts("  pull <remote> <branch>  Pull from a remote (fetch + merge)");
     puts("  log                     Show commit history");
     puts("  version                 Print version information");
     puts("  help                    Print this help text");
@@ -837,6 +843,327 @@ static int command_diff(int argc, char **argv) {
     return 0;
 }
 
+static int command_remote(int argc, char **argv) {
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    if (argc == 2) {
+        avc_remote *remotes = NULL;
+        int count = 0;
+        avc_error_clear(&error);
+        status = avc_remote_list(repo.metadata_path, &remotes, &count,
+                                  &error);
+        if (status != AVC_OK) {
+            fprintf(stderr, "astraphosvc: %s\n", error.message);
+            avc_repository_free(&repo);
+            return 1;
+        }
+
+        if (count == 0) {
+            puts("no remotes configured");
+        }
+        for (int i = 0; i < count; i++) {
+            printf("%s\t%s\n", remotes[i].name, remotes[i].url);
+        }
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 0;
+    }
+
+    if (argc >= 4 && strcmp(argv[2], "add") == 0) {
+        status = avc_remote_add(repo.metadata_path, argv[3], argv[4],
+                                 &error);
+        if (status != AVC_OK) {
+            fprintf(stderr, "astraphosvc: %s\n", error.message);
+            avc_repository_free(&repo);
+            return 1;
+        }
+        printf("added remote '%s' -> %s\n", argv[3], argv[4]);
+        avc_repository_free(&repo);
+        return 0;
+    }
+
+    if (argc >= 3 && strcmp(argv[2], "remove") == 0) {
+        status = avc_remote_remove(repo.metadata_path, argv[3], &error);
+        if (status != AVC_OK) {
+            fprintf(stderr, "astraphosvc: %s\n", error.message);
+            avc_repository_free(&repo);
+            return 1;
+        }
+        printf("removed remote '%s'\n", argv[3]);
+        avc_repository_free(&repo);
+        return 0;
+    }
+
+    fprintf(stderr, "astraphosvc: usage: remote [add <name> <url> | remove <name>]\n");
+    avc_repository_free(&repo);
+    return 1;
+}
+
+static int command_fetch(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "astraphosvc: usage: fetch <remote>\n");
+        return 1;
+    }
+
+    const char *remote_name = argv[2];
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_remote *remotes = NULL;
+    int count = 0;
+    avc_error_clear(&error);
+    status = avc_remote_list(repo.metadata_path, &remotes, &count, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    const char *url = NULL;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(remotes[i].name, remote_name) == 0) {
+            url = remotes[i].url;
+            break;
+        }
+    }
+
+    if (url == NULL) {
+        fprintf(stderr, "astraphosvc: remote '%s' not found\n", remote_name);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_remote_fetch(&odb, repo.metadata_path, url, remote_name,
+                               &error);
+    avc_odb_close(&odb);
+    avc_remote_list_free(remotes, count);
+    avc_repository_free(&repo);
+
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: fetch failed: %s\n", error.message);
+        return 1;
+    }
+
+    printf("fetched from '%s'\n", remote_name);
+    return 0;
+}
+
+static int command_push(int argc, char **argv) {
+    if (argc < 4) {
+        fprintf(stderr, "astraphosvc: usage: push <remote> <branch>\n");
+        return 1;
+    }
+
+    const char *remote_name = argv[2];
+    const char *branch = argv[3];
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_remote *remotes = NULL;
+    int count = 0;
+    avc_error_clear(&error);
+    status = avc_remote_list(repo.metadata_path, &remotes, &count, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    const char *url = NULL;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(remotes[i].name, remote_name) == 0) {
+            url = remotes[i].url;
+            break;
+        }
+    }
+
+    if (url == NULL) {
+        fprintf(stderr, "astraphosvc: remote '%s' not found\n", remote_name);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_remote_push(&odb, repo.metadata_path, url, remote_name,
+                              branch, &error);
+    avc_odb_close(&odb);
+    avc_remote_list_free(remotes, count);
+    avc_repository_free(&repo);
+
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: push failed: %s\n", error.message);
+        return 1;
+    }
+
+    printf("pushed '%s' to '%s'\n", branch, remote_name);
+    return 0;
+}
+
+static int command_pull(int argc, char **argv) {
+    if (argc < 4) {
+        fprintf(stderr, "astraphosvc: usage: pull <remote> <branch>\n");
+        return 1;
+    }
+
+    const char *remote_name = argv[2];
+    const char *branch = argv[3];
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_remote *remotes = NULL;
+    int count = 0;
+    avc_error_clear(&error);
+    status = avc_remote_list(repo.metadata_path, &remotes, &count, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    const char *url = NULL;
+    for (int i = 0; i < count; i++) {
+        if (strcmp(remotes[i].name, remote_name) == 0) {
+            url = remotes[i].url;
+            break;
+        }
+    }
+
+    if (url == NULL) {
+        fprintf(stderr, "astraphosvc: remote '%s' not found\n", remote_name);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_remote_fetch(&odb, repo.metadata_path, url, remote_name,
+                               &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: fetch failed: %s\n", error.message);
+        avc_odb_close(&odb);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char tracking_ref[512];
+    snprintf(tracking_ref, sizeof(tracking_ref),
+             "refs/remotes/%s/%s", remote_name, branch);
+
+    avc_oid fetch_head;
+    avc_error_clear(&error);
+    status = avc_refs_read_ref(repo.metadata_path, tracking_ref,
+                                fetch_head, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: no commits fetched for '%s/%s'\n",
+                remote_name, branch);
+        avc_odb_close(&odb);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid head_oid;
+    avc_error_clear(&error);
+    status = avc_refs_resolve_head(repo.metadata_path, head_oid, &error);
+    if (status != AVC_OK) {
+        avc_odb_close(&odb);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        avc_error_set(&error, AVC_ERR_NOT_FOUND, "no current branch");
+        return 1;
+    }
+
+    avc_oid merge_result;
+    int was_ff = 0;
+    avc_error_clear(&error);
+    status = avc_merge(&odb, repo.metadata_path, head_oid, fetch_head,
+                        merge_result, &was_ff, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: merge failed: %s\n", error.message);
+        avc_odb_close(&odb);
+        avc_remote_list_free(remotes, count);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char *current_branch = NULL;
+    avc_error_clear(&error);
+    avc_refs_current_branch(repo.metadata_path, &current_branch, &error);
+    if (current_branch != NULL) {
+        char dst_ref[512];
+        snprintf(dst_ref, sizeof(dst_ref), "refs/heads/%s", current_branch);
+        avc_refs_write_ref(repo.metadata_path, dst_ref, merge_result,
+                           &error);
+        free(current_branch);
+    }
+
+    avc_odb_close(&odb);
+    avc_remote_list_free(remotes, count);
+    avc_repository_free(&repo);
+
+    printf("pulled '%s' from '%s'\n", branch, remote_name);
+    return 0;
+}
+
 int avc_cli_main(int argc, char **argv) {
     avc_log_from_environment();
     if (argc < 2 || strcmp(argv[1], "help") == 0 ||
@@ -875,6 +1202,18 @@ int avc_cli_main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "diff") == 0) {
         return command_diff(argc, argv);
+    }
+    if (strcmp(argv[1], "remote") == 0) {
+        return command_remote(argc, argv);
+    }
+    if (strcmp(argv[1], "fetch") == 0) {
+        return command_fetch(argc, argv);
+    }
+    if (strcmp(argv[1], "push") == 0) {
+        return command_push(argc, argv);
+    }
+    if (strcmp(argv[1], "pull") == 0) {
+        return command_pull(argc, argv);
     }
 
     fprintf(stderr, "astraphosvc: command '%s' is not yet implemented\n",
