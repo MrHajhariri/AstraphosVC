@@ -54,12 +54,12 @@ static void test_repository_init_and_discover(const char *root) {
 
     char *head = avc_fs_join(repo.metadata_path, "HEAD");
     char *config = avc_fs_join(repo.metadata_path, "config");
-    char *blobs = avc_fs_join(repo.metadata_path, "objects/blobs");
+    char *tmp = avc_fs_join(repo.metadata_path, "objects/tmp");
     char *heads = avc_fs_join(repo.metadata_path, "refs/heads");
-    assert(head != NULL && config != NULL && blobs != NULL && heads != NULL);
+    assert(head != NULL && config != NULL && tmp != NULL && heads != NULL);
     assert(avc_fs_is_regular_file(head));
     assert(avc_fs_is_regular_file(config));
-    assert(avc_fs_is_directory(blobs));
+    assert(avc_fs_is_directory(tmp));
     assert(avc_fs_is_directory(heads));
 
     char *src = join3(root, "src", "nested");
@@ -72,7 +72,7 @@ static void test_repository_init_and_discover(const char *root) {
     avc_repository_free(&repo);
     free(head);
     free(config);
-    free(blobs);
+    free(tmp);
     free(heads);
     free(src);
 }

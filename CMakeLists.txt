@@ -8,8 +8,14 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(ASTRAPHOSVC_BUILD_TESTS "Build AstraphosVC tests" ON)
 
+find_package(ZLIB REQUIRED)
+
 add_library(astraphosvc_core
+    compression/avc_compress.c
     config/avc_config.c
+    hashing/avc_hash.c
+    objects/avc_oid.c
+    objects/avc_object.c
     repository/avc_repository.c
     utils/avc_error.c
     utils/avc_fs.c
@@ -19,6 +25,7 @@ target_include_directories(astraphosvc_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(astraphosvc_core PRIVATE
     $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
 )
+target_link_libraries(astraphosvc_core PUBLIC ZLIB::ZLIB)
 
 add_executable(astraphosvc
     cli/avc_cli.c
@@ -41,6 +48,15 @@ if(ASTRAPHOSVC_BUILD_TESTS)
         $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
     )
     add_test(NAME phase1-unit COMMAND test_phase1)
+
+    add_executable(test_phase2
+        tests/unit/test_phase2.c
+    )
+    target_link_libraries(test_phase2 PRIVATE astraphosvc_core)
+    target_compile_options(test_phase2 PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
+    )
+    add_test(NAME phase2-unit COMMAND test_phase2)
 
     add_test(NAME phase1-cli-version COMMAND astraphosvc version)
     set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 0.1.0")

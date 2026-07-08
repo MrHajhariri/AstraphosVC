@@ -113,6 +113,10 @@ avc_status avc_fs_read_file(const char *path, char **data, size_t *size, avc_err
 
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
+        if (errno == ENOENT || errno == ENOTDIR) {
+            avc_error_setf(error, AVC_ERR_NOT_FOUND, "file not found: %s", path);
+            return AVC_ERR_NOT_FOUND;
+        }
         avc_error_setf(error, AVC_ERR_IO, "failed to open '%s' for reading: %s", path, strerror(errno));
         return AVC_ERR_IO;
     }

@@ -44,8 +44,10 @@ void avc_repository_free(avc_repository *repository) {
     }
     free(repository->worktree_path);
     free(repository->metadata_path);
+    free(repository->objects_path);
     repository->worktree_path = NULL;
     repository->metadata_path = NULL;
+    repository->objects_path = NULL;
 }
 
 avc_status avc_repository_init(const char *worktree_path, const char *initial_branch, avc_repository *repository, avc_error *error) {
@@ -67,7 +69,7 @@ avc_status avc_repository_init(const char *worktree_path, const char *initial_br
     }
 
     const char *dirs[] = {
-        "objects", "objects/blobs", "objects/trees", "objects/commits", "objects/tags", "objects/tmp",
+        "objects", "objects/tmp",
         "refs", "refs/heads", "refs/tags", "logs"
     };
     status = avc_fs_mkdir_p(metadata, error);
@@ -117,7 +119,8 @@ avc_status avc_repository_init(const char *worktree_path, const char *initial_br
 
     repository->worktree_path = dup_string(worktree_path);
     repository->metadata_path = metadata;
-    if (repository->worktree_path == NULL) {
+    repository->objects_path = avc_fs_join(metadata, "objects");
+    if (repository->worktree_path == NULL || repository->objects_path == NULL) {
         avc_repository_free(repository);
         avc_error_set(error, AVC_ERR_NO_MEMORY, "out of memory storing repository paths");
         return AVC_ERR_NO_MEMORY;
@@ -157,7 +160,8 @@ avc_status avc_repository_open(const char *worktree_path, avc_repository *reposi
 
     repository->worktree_path = dup_string(worktree_path);
     repository->metadata_path = metadata;
-    if (repository->worktree_path == NULL) {
+    repository->objects_path = avc_fs_join(metadata, "objects");
+    if (repository->worktree_path == NULL || repository->objects_path == NULL) {
         avc_repository_free(repository);
         avc_error_set(error, AVC_ERR_NO_MEMORY, "out of memory opening repository");
         return AVC_ERR_NO_MEMORY;

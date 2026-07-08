@@ -13,6 +13,7 @@ extern "C" {
 typedef struct avc_repository {
     char *worktree_path;
     char *metadata_path;
+    char *objects_path;
 } avc_repository;
 
 void avc_repository_free(avc_repository *repository);

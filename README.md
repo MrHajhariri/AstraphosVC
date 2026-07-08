@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 1 is implemented. Repository initialization, repository discovery, configuration parsing and writing, logging, error handling, and the `init`, `version`, and `help` commands are present. Object storage, index operations, commits, packfiles, remotes, and Git compatibility are designed but not implemented yet.
+Current status: Phase 2 is implemented. Phase 1 (repository init, config, discovery, CLI) plus SHA-1 hashing, zlib compression, and a content-addressed object database with blob/tree/commit/tag storage. Index operations, commits, packfiles, remotes, and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -40,7 +40,7 @@ Current status: Phase 1 is implemented. Repository initialization, repository di
        +-----------------------------------+
 ```
 
-Phase 1 keeps the core small: CLI code calls repository APIs, repository APIs call filesystem and config APIs, and all failures propagate through `avc_status` plus `avc_error`.
+CLI code calls repository APIs, repository APIs call filesystem and config APIs, and all failures propagate through `avc_status` plus `avc_error`. Phase 2 added SHA-1 hashing, zlib compression, and a content-addressed object database.
 
 ## Build
 
@@ -97,7 +97,7 @@ Planned workflows such as `add`, `commit`, `status`, `diff`, `clone`, `fetch`, a
 | --- | --- | --- |
 | `.avc/` repositories | Implemented | Phase 1 repository creation and discovery. |
 | Existing `.git/` repositories | Planned | Design documented; not implemented. |
-| Git loose objects | Planned | Object format selected for future SHA-1 and SHA-256 compatibility. |
+| Object database | Implemented | SHA-1, zlib, flat hash-addressed storage, all 4 object types. |
 | Git index | Planned | Phase 3 target. |
 | Git packfiles | Planned | Phase 9 target. |
 | Git protocol | Planned | Phase 8 and Phase 10 target. |
@@ -112,21 +112,25 @@ Implemented:
 - `.avc/` repository metadata creation
 - config load/write for simple INI-style files
 - upward repository discovery API
+- SHA-1 hashing (RFC 3174, no external crypto)
+- zlib compression/decompression
+- Content-addressed object database (blob, tree, commit, tag)
+- Atomic object writes and integrity verification
 - unit and integration test targets
 
 Planned:
 
-- Object database, index, commits, branches, merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
+- Index, commits, branches, merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. The next phase is the object database: blob, tree, commit, and tag storage with compression and integrity verification.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 is the index (staging area).
 
 ## FAQ
 
 Is AstraphosVC Git-compatible today?
 
-No. Phase 1 does not open `.git/` repositories. Git compatibility is a design goal and is documented as planned work.
+Not yet. The object database uses a Git-compatible canonical format, but `.git/` repository opening is planned for Phase 10.
 
 Why `.avc/` instead of `.git/`?
 
@@ -134,7 +138,7 @@ AstraphosVC owns its native metadata format. Git interoperability will be implem
 
 ## Troubleshooting
 
-`astraphosvc: command 'status' is not implemented in Phase 1` means the command is planned but not yet implemented.
+`astraphosvc: command 'add' is not yet implemented` means the command is planned but not yet implemented.
 
 If `make test` fails because no compiler exists, install a C17-capable compiler such as GCC or Clang.
 
