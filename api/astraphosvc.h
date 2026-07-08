@@ -4,6 +4,7 @@
 #include "commits/avc_commit.h"
 #include "compression/avc_compress.h"
 #include "config/avc_config.h"
+#include "diff/avc_diff.h"
 #include "hashing/avc_hash.h"
 #include "index/avc_index.h"
 #include "merge/avc_merge.h"

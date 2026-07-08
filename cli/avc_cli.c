@@ -25,6 +25,7 @@ static void print_help(void) {
     puts("  branch [name]           List branches or create a new branch");
     puts("  checkout <branch>       Switch to a branch");
     puts("  merge <branch>          Merge a branch into the current branch");
+    puts("  diff [path]             Show working tree diff");
     puts("  log                     Show commit history");
     puts("  version                 Print version information");
     puts("  help                    Print this help text");
@@ -726,6 +727,116 @@ static int command_merge(int argc, char **argv) {
     return 0;
 }
 
+static int command_diff(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char *index_path = avc_fs_join(repo.metadata_path, "index");
+    if (index_path == NULL) {
+        fprintf(stderr, "astraphosvc: out of memory\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_index index;
+    avc_index_init(&index);
+    status = avc_index_load(&index, index_path, &error);
+    free(index_path);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: no staged changes to diff\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 0;
+    }
+
+    avc_oid head_tree;
+    int has_head = 0;
+    avc_oid head_oid;
+    avc_error_clear(&error);
+    if (avc_refs_resolve_head(repo.metadata_path, head_oid, &error) == AVC_OK) {
+        void *payload = NULL;
+        size_t payload_size = 0;
+        avc_object_type type;
+        if (avc_odb_read(&odb, head_oid, &type, &payload,
+                          &payload_size, &error) == AVC_OK) {
+            avc_commit_parse((const unsigned char *)payload, payload_size,
+                              &head_tree, NULL, NULL, NULL, 0, NULL, 0,
+                              NULL, 0, &error);
+            free(payload);
+            has_head = 1;
+        }
+    }
+
+    if (!has_head) {
+        puts("diff -- no commits yet, comparing against empty tree");
+    }
+
+    avc_oid index_tree;
+    avc_error_clear(&error);
+    status = avc_commit_build_tree(&odb, &index, index_tree, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to build index tree\n");
+        avc_index_free(&index);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid empty_oid;
+    memset(empty_oid, 0, 20);
+
+    avc_diff_file *files = NULL;
+    int file_count = 0;
+    avc_error_clear(&error);
+    status = avc_diff_trees(&odb,
+                             has_head ? head_tree : empty_oid,
+                             index_tree,
+                             &files, &file_count, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: diff error: %s\n", error.message);
+        avc_index_free(&index);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    for (int i = 0; i < file_count; i++) {
+        const char *label;
+        switch (files[i].status) {
+        case AVC_DIFF_ADDED:    label = "added";    break;
+        case AVC_DIFF_DELETED:  label = "deleted";  break;
+        case AVC_DIFF_MODIFIED: label = "modified"; break;
+        default:                label = "unchanged"; break;
+        }
+        printf("%s: %s\n", label, files[i].path);
+    }
+
+    avc_diff_files_free(files, file_count);
+    avc_index_free(&index);
+    avc_odb_close(&odb);
+    avc_repository_free(&repo);
+    return 0;
+}
+
 int avc_cli_main(int argc, char **argv) {
     avc_log_from_environment();
     if (argc < 2 || strcmp(argv[1], "help") == 0 ||
@@ -761,6 +872,9 @@ int avc_cli_main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "merge") == 0) {
         return command_merge(argc, argv);
+    }
+    if (strcmp(argv[1], "diff") == 0) {
+        return command_diff(argc, argv);
     }
 
     fprintf(stderr, "astraphosvc: command '%s' is not yet implemented\n",
