@@ -26,6 +26,7 @@ TEST1_SRC = tests/unit/test_phase1.c
 TEST2_SRC = tests/unit/test_phase2.c
 TEST3_SRC = tests/unit/test_phase3.c
 TEST4_SRC = tests/unit/test_phase4.c
+TEST5_SRC = tests/unit/test_phase5.c
 
 CORE_OBJ = $(CORE_SRC:%.c=$(BUILD_DIR)/%.o)
 CLI_OBJ = $(CLI_SRC:%.c=$(BUILD_DIR)/%.o)
@@ -33,6 +34,7 @@ TEST1_OBJ = $(TEST1_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST2_OBJ = $(TEST2_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST3_OBJ = $(TEST3_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST4_OBJ = $(TEST4_SRC:%.c=$(BUILD_DIR)/%.o)
+TEST5_OBJ = $(TEST5_SRC:%.c=$(BUILD_DIR)/%.o)
 
 all: build
 
@@ -53,15 +55,19 @@ $(BUILD_DIR)/test_phase3: $(CORE_OBJ) $(TEST3_OBJ)
 $(BUILD_DIR)/test_phase4: $(CORE_OBJ) $(TEST4_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+$(BUILD_DIR)/test_phase5: $(CORE_OBJ) $(TEST5_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/astraphosvc
+test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/test_phase5 $(BUILD_DIR)/astraphosvc
 	$(BUILD_DIR)/test_phase1
 	$(BUILD_DIR)/test_phase2
 	$(BUILD_DIR)/test_phase3
 	$(BUILD_DIR)/test_phase4
+	$(BUILD_DIR)/test_phase5
 	sh tests/integration/test_phase1_cli.sh $(BUILD_DIR)/astraphosvc
 
 install: build

@@ -26,6 +26,16 @@ avc_status avc_refs_write_ref(const char *metadata_path, const char *refname,
 avc_status avc_refs_resolve_head(const char *metadata_path, avc_oid out,
                                  avc_error *error);
 
+avc_status avc_refs_current_branch(const char *metadata_path, char **branch,
+                                   avc_error *error);
+
+avc_status avc_refs_list_branches(const char *metadata_path,
+                                  char ***branches, int *count,
+                                  avc_error *error);
+
+avc_status avc_refs_delete_ref(const char *metadata_path, const char *refname,
+                               avc_error *error);
+
 #ifdef __cplusplus
 }
 #endif

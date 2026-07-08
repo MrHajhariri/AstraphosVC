@@ -22,6 +22,8 @@ static void print_help(void) {
     puts("  add <path>              Stage file content");
     puts("  status                  Show working tree status");
     puts("  commit -m <message>     Record changes to the repository");
+    puts("  branch [name]           List branches or create a new branch");
+    puts("  checkout <branch>       Switch to a branch");
     puts("  log                     Show commit history");
     puts("  version                 Print version information");
     puts("  help                    Print this help text");
@@ -473,6 +475,147 @@ static int command_log(int argc, char **argv) {
     return status == AVC_OK ? 0 : 1;
 }
 
+static int command_branch(int argc, char **argv) {
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    if (argc == 2) {
+        char **branches = NULL;
+        int count = 0;
+        avc_error_clear(&error);
+        status = avc_refs_list_branches(repo.metadata_path, &branches,
+                                        &count, &error);
+        if (status != AVC_OK) {
+            fprintf(stderr, "astraphosvc: %s\n", error.message);
+            avc_repository_free(&repo);
+            return 1;
+        }
+
+        char *current = NULL;
+        avc_error_clear(&error);
+        avc_refs_current_branch(repo.metadata_path, &current, &error);
+
+        for (int i = 0; i < count; i++) {
+            if (current != NULL && strcmp(branches[i], current) == 0) {
+                printf("* %s\n", branches[i]);
+            } else {
+                printf("  %s\n", branches[i]);
+            }
+            free(branches[i]);
+        }
+        free(branches);
+        free(current);
+        avc_repository_free(&repo);
+        return 0;
+    }
+
+    const char *branch_name = argv[2];
+    char *refname = NULL;
+    {
+        size_t len = strlen("refs/heads/") + strlen(branch_name) + 1;
+        refname = (char *)malloc(len);
+        if (refname == NULL) {
+            fprintf(stderr, "astraphosvc: out of memory\n");
+            avc_repository_free(&repo);
+            return 1;
+        }
+        snprintf(refname, len, "refs/heads/%s", branch_name);
+    }
+
+    avc_error_clear(&error);
+    avc_oid head_oid;
+    status = avc_refs_resolve_head(repo.metadata_path, head_oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: nothing to branch from (no commits)\n");
+        free(refname);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid existing;
+    avc_error_clear(&error);
+    status = avc_refs_read_ref(repo.metadata_path, refname, existing, &error);
+    if (status == AVC_OK) {
+        fprintf(stderr, "astraphosvc: branch '%s' already exists\n",
+                branch_name);
+        free(refname);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_refs_write_ref(repo.metadata_path, refname, head_oid, &error);
+    free(refname);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to create branch: %s\n",
+                error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    printf("Created branch '%s'\n", branch_name);
+    avc_repository_free(&repo);
+    return 0;
+}
+
+static int command_checkout(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "astraphosvc: usage: checkout <branch>\n");
+        return 1;
+    }
+
+    const char *branch_name = argv[2];
+    avc_error error;
+    avc_error_clear(&error);
+
+    size_t rlen = strlen("refs/heads/") + strlen(branch_name) + 1;
+    char *refname = (char *)malloc(rlen);
+    if (refname == NULL) {
+        fprintf(stderr, "astraphosvc: out of memory\n");
+        return 1;
+    }
+    snprintf(refname, rlen, "refs/heads/%s", branch_name);
+
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        free(refname);
+        return 1;
+    }
+
+    avc_oid oid;
+    avc_error_clear(&error);
+    status = avc_refs_read_ref(repo.metadata_path, refname, oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: branch '%s' does not exist\n",
+                branch_name);
+        free(refname);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_refs_write_head_ref(repo.metadata_path, refname, &error);
+    free(refname);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to switch branch: %s\n",
+                error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    printf("Switched to branch '%s'\n", branch_name);
+    avc_repository_free(&repo);
+    return 0;
+}
+
 int avc_cli_main(int argc, char **argv) {
     avc_log_from_environment();
     if (argc < 2 || strcmp(argv[1], "help") == 0 ||
@@ -499,6 +642,12 @@ int avc_cli_main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "log") == 0) {
         return command_log(argc, argv);
+    }
+    if (strcmp(argv[1], "branch") == 0) {
+        return command_branch(argc, argv);
+    }
+    if (strcmp(argv[1], "checkout") == 0) {
+        return command_checkout(argc, argv);
     }
 
     fprintf(stderr, "astraphosvc: command '%s' is not yet implemented\n",
