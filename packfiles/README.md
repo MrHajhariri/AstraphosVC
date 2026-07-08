@@ -1,3 +1,3 @@
 # packfiles/
 
-Status: planned for Phase 9. Packfile APIs will be documented before implementation.
+Status: Phase 9 implemented. Supports packfile writing (bundling objects with compression) and reading (extracting objects into ODB) with a companion index file for OID lookup.

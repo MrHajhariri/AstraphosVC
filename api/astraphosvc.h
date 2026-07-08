@@ -10,6 +10,7 @@
 #include "merge/avc_merge.h"
 #include "objects/avc_oid.h"
 #include "objects/avc_object.h"
+#include "packfiles/avc_pack.h"
 #include "refs/avc_refs.h"
 #include "repository/avc_repository.h"
 #include "transport/avc_remote.h"

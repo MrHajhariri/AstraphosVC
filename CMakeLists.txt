@@ -20,6 +20,7 @@ add_library(astraphosvc_core
     merge/avc_merge.c
     objects/avc_oid.c
     objects/avc_object.c
+    packfiles/avc_pack.c
     refs/avc_refs.c
     repository/avc_repository.c
     transport/avc_remote.c
@@ -117,6 +118,15 @@ if(ASTRAPHOSVC_BUILD_TESTS)
         $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
     )
     add_test(NAME phase8-unit COMMAND test_phase8)
+
+    add_executable(test_phase9
+        tests/unit/test_phase9.c
+    )
+    target_link_libraries(test_phase9 PRIVATE astraphosvc_core)
+    target_compile_options(test_phase9 PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
+    )
+    add_test(NAME phase9-unit COMMAND test_phase9)
 
     add_test(NAME phase1-cli-version COMMAND astraphosvc version)
     set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 0.1.0")

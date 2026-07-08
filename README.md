@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 8 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison) + Phase 7 (diff engine: unified diff, tree comparison) + Phase 8 (remote repos: add/list/remove remotes, fetch, push, pull). Packfiles and Git compatibility are designed but not yet implemented.
+Current status: Phase 9 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison) + Phase 7 (diff engine: unified diff, tree comparison) + Phase 8 (remote repos: add/list/remove remotes, fetch, push, pull) + Phase 9 (packfiles: bundle objects into .pack/.idx for efficient transfer). Git compatibility is designed but not yet implemented.
 
 ## Goals
 
