@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 5 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status`) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branches, checkout, `branch`, `checkout`). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
+Current status: Phase 5 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branch create/list, checkout, branch switching). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -134,9 +134,8 @@ Implemented:
 - `astraphosvc commit -m <message>` — create commits
 - `astraphosvc log` — display commit history
 - `astraphosvc branch` — list branches
-- `astraphosvc branch <name>` — create a branch at current HEAD
-- `astraphosvc checkout <branch>` — switch to an existing branch
-- Branch API (list, current, delete)
+- `astraphosvc branch <name>` — create a branch at HEAD
+- `astraphosvc checkout <branch>` — switch to a branch
 - unit and integration test targets
 
 Planned:
@@ -145,7 +144,7 @@ Planned:
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching and checkout.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index (staging area); Phase 4 added commits and refs; Phase 5 added branching and checkout.
 
 ## FAQ
 
