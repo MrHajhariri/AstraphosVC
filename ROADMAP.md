@@ -14,35 +14,31 @@ Implemented: Git-compatible v2 staging area, `add` and `status` commands, stat c
 
 ## Phase 4: Commit Engine
 
-Planned: commit creation, history traversal, branch pointers, and detached HEAD support.
-
-## Phase 4: Commit Engine
-
-Planned: commit creation, history traversal, branch pointers, and detached HEAD support.
+Implemented: commit creation, history traversal, branch pointers, and detached HEAD support.
 
 ## Phase 5: Branching
 
-Planned: branch creation, checkout, branch switching, and HEAD management.
+Implemented: branch creation, checkout, branch switching, and HEAD management.
 
 ## Phase 6: Merge Engine
 
-Planned: fast-forward merges, three-way merge, conflict detection, and conflict markers.
+Implemented: fast-forward merges, three-way merge, conflict detection, and conflict markers.
 
 ## Phase 7: Diff Engine
 
-Planned: file diffs, unified output, rename detection, and binary file handling.
+Implemented: file diffs, unified output, rename detection, and binary file handling.
 
 ## Phase 8: Remote Repositories
 
-Planned: clone, fetch, pull, push, and transport abstractions.
+Implemented: clone, fetch, pull, push, and transport abstractions.
 
 ## Phase 9: Packfiles
 
-Planned: packfile reading, writing, delta compression, and efficient object transfer.
+Implemented: packfile reading, writing, and efficient object transfer.
 
 ## Phase 10: Git Compatibility Layer
 
-Planned: `.git/` layout, Git object IDs, Git refs, packfiles, config files, and remotes where technically feasible.
+Implemented: `.git/` repo detection, loose object I/O, ref reading (loose + packed-refs), config with subsection support, and Git packfile parser (PACK v2/v3 idx + pack with OFS_DELTA/REF_DELTA resolution).
 
 ## Phase 11: Advanced Features
 

@@ -2,6 +2,8 @@
 #define ASTRAPHOSVC_H
 
 #include "commits/avc_commit.h"
+#include "compat/avc_git_compat.h"
+#include "compat/avc_git_pack.h"
 #include "compression/avc_compress.h"
 #include "config/avc_config.h"
 #include "diff/avc_diff.h"
@@ -18,6 +20,6 @@
 #include "utils/avc_fs.h"
 #include "utils/avc_log.h"
 
-#define ASTRAPHOSVC_VERSION "0.1.0"
+#define ASTRAPHOSVC_VERSION "1.0.0"
 
 #endif

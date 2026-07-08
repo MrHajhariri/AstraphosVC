@@ -145,7 +145,26 @@ avc_status avc_config_load(avc_config *config, const char *path, avc_error *erro
                 return AVC_ERR_PARSE;
             }
             *end = '\0';
-            snprintf(section, sizeof(section), "%s", trim(text + 1));
+            char *sec = trim(text + 1);
+            char *quote = strchr(sec, '"');
+            if (quote != NULL) {
+                char *sub_start = quote + 1;
+                char *sub_end = strchr(sub_start, '"');
+                if (sub_end == NULL) {
+                    free(data);
+                    avc_error_set(error, AVC_ERR_PARSE, "unterminated subsection quote");
+                    return AVC_ERR_PARSE;
+                }
+                *sub_end = '\0';
+                char *sec_name = trim(sec);
+                if (sec_name + strlen(sec_name) > quote) {
+                    *(quote - 1) = '\0';
+                    sec_name = trim(sec);
+                }
+                snprintf(section, sizeof(section), "%s.%s", sec_name, sub_start);
+            } else {
+                snprintf(section, sizeof(section), "%s", sec);
+            }
             continue;
         }
         char *equals = strchr(text, '=');
@@ -197,7 +216,19 @@ avc_status avc_config_write(const avc_config *config, const char *path, avc_erro
             buffer = grown;
         }
         if (need_section) {
-            length += (size_t)snprintf(buffer + length, capacity - length, "%s[%s]\n", length == 0 ? "" : "\n", entry->section);
+            const char *dot = strchr(entry->section, '.');
+            if (dot != NULL) {
+                char base[128];
+                size_t base_len = (size_t)(dot - entry->section);
+                if (base_len >= sizeof(base_len)) base_len = sizeof(base) - 1;
+                memcpy(base, entry->section, base_len);
+                base[base_len] = '\0';
+                length += (size_t)snprintf(buffer + length, capacity - length,
+                    "%s[%s \"%s\"]\n", length == 0 ? "" : "\n", base, dot + 1);
+            } else {
+                length += (size_t)snprintf(buffer + length, capacity - length,
+                    "%s[%s]\n", length == 0 ? "" : "\n", entry->section);
+            }
             current_section = entry->section;
         }
         length += (size_t)snprintf(buffer + length, capacity - length, "%s = %s\n", entry->key, entry->value);

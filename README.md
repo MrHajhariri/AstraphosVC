@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 9 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison) + Phase 7 (diff engine: unified diff, tree comparison) + Phase 8 (remote repos: add/list/remove remotes, fetch, push, pull) + Phase 9 (packfiles: bundle objects into .pack/.idx for efficient transfer). Git compatibility is designed but not yet implemented.
+Current status: v1.0.0 — Phase 10 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison) + Phase 7 (diff engine: unified diff, tree comparison) + Phase 8 (remote repos: add/list/remove remotes, fetch, push, pull) + Phase 9 (packfiles: bundle objects into .pack/.idx for efficient transfer) + Phase 10 (Git compatibility layer: `.git/` repo detection, loose object I/O, refs, config with subsection support, Git packfile parser).
 
 ## Goals
 
@@ -108,7 +108,7 @@ Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in
 | Area | Status | Notes |
 | --- | --- | --- |
 | `.avc/` repositories | Implemented | Phase 1 repository creation and discovery. |
-| Existing `.git/` repositories | Planned | Design documented; not implemented. |
+| Existing `.git/` repositories | Implemented | Phase 10: detect, open, read objects/refs. |
 | Object database | Implemented | SHA-1, zlib, flat hash-addressed storage, all 4 object types. |
 | Git index | Implemented | Phase 3. |
 | Commits & refs | Implemented | Phase 4. |
@@ -116,8 +116,10 @@ Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in
 | Merge engine | Implemented | Phase 6. |
 | Diff engine | Implemented | Phase 7. |
 | Remote repos | Implemented | Phase 8. |
-| Git packfiles | Planned | Phase 9 target. |
-| Git protocol | Planned | Phase 8 and Phase 10 target. |
+| Packfiles (native) | Implemented | Phase 9: AVCPACK format. |
+| Git packfiles | Implemented | Phase 10: PACK v2/v3 + idx parsing with OFS_DELTA/REF_DELTA. |
+| Git config with subsections | Implemented | Phase 10: `[remote "origin"]` support. |
+| Git protocol | Planned | Future phase. |
 
 ## Current Implementation Status
 
@@ -156,20 +158,28 @@ Implemented:
 - Merge-base (LCA) computation
 - Three-way tree comparison
 - unit and integration test targets
+- Git repo detection, object I/O, ref resolution (compat/ module)
+- Git packfile parsing (PACK v2/v3 with delta resolution)
+- Git config subsection support (e.g. `[remote "origin"]`)
+- Native packfile format (AVCPACK + AVCPACKidx1)
 
 Planned:
 
-- Diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
+- `astraphosvc clone` — clone a Git repository
+- Git protocol support
+- Tags, stash, cherry-pick, rebase, bisect, worktrees
+- Hooks and signing
+- Plugin architecture
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching; Phase 6 added merge; Phase 7 added diff; Phase 8 added remotes.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching; Phase 6 added merge; Phase 7 added diff; Phase 8 added remotes; Phase 9 added packfiles; Phase 10 added the Git compatibility layer.
 
 ## FAQ
 
 Is AstraphosVC Git-compatible today?
 
-Not yet. The object database uses a Git-compatible canonical format, but `.git/` repository opening is planned for Phase 10.
+Partially. The object database uses a Git-compatible canonical format, `.git/` repos can be detected, opened, and their objects and refs read. Git packfiles (PACK v2/v3) can be parsed with full delta resolution. Full read/write Git interoperability is still in progress.
 
 Why `.avc/` instead of `.git/`?
 

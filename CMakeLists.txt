@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(AstraphosVC VERSION 0.1.0 LANGUAGES C)
+project(AstraphosVC VERSION 1.0.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -12,6 +12,8 @@ find_package(ZLIB REQUIRED)
 
 add_library(astraphosvc_core
     commits/avc_commit.c
+    compat/avc_git_compat.c
+    compat/avc_git_pack.c
     compression/avc_compress.c
     config/avc_config.c
     diff/avc_diff.c
@@ -128,8 +130,17 @@ if(ASTRAPHOSVC_BUILD_TESTS)
     )
     add_test(NAME phase9-unit COMMAND test_phase9)
 
+    add_executable(test_phase10
+        tests/unit/test_phase10.c
+    )
+    target_link_libraries(test_phase10 PRIVATE astraphosvc_core)
+    target_compile_options(test_phase10 PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
+    )
+    add_test(NAME phase10-unit COMMAND test_phase10)
+
     add_test(NAME phase1-cli-version COMMAND astraphosvc version)
-    set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 0.1.0")
+    set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 1.0.0")
 
     add_test(NAME phase1-cli-help COMMAND astraphosvc help)
     set_tests_properties(phase1-cli-help PROPERTIES PASS_REGULAR_EXPRESSION "Implemented commands")

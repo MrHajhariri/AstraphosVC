@@ -120,7 +120,7 @@ static avc_status build_tree_recursive(avc_odb *odb, tree_node *node,
     unsigned char *p = buf;
     for (int i = 0; i < node->child_count; i++) {
         tree_node *child = node->children[i];
-        const char *mode_str = child->is_tree ? "40000" : "100644";
+        const char *mode_str = child->is_tree ? "040000" : "100644";
         int entry_len = snprintf((char *)p, total - (size_t)(p - buf),
                                  "%s %s", mode_str, child->name);
         p += entry_len;

@@ -9,6 +9,8 @@ LDFLAGS ?= -lz
 
 CORE_SRC = \
 	commits/avc_commit.c \
+	compat/avc_git_compat.c \
+	compat/avc_git_pack.c \
 	compression/avc_compress.c \
 	config/avc_config.c \
 	diff/avc_diff.c \
@@ -35,6 +37,7 @@ TEST6_SRC = tests/unit/test_phase6.c
 TEST7_SRC = tests/unit/test_phase7.c
 TEST8_SRC = tests/unit/test_phase8.c
 TEST9_SRC = tests/unit/test_phase9.c
+TEST10_SRC = tests/unit/test_phase10.c
 
 CORE_OBJ = $(CORE_SRC:%.c=$(BUILD_DIR)/%.o)
 CLI_OBJ = $(CLI_SRC:%.c=$(BUILD_DIR)/%.o)
@@ -47,6 +50,7 @@ TEST6_OBJ = $(TEST6_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST7_OBJ = $(TEST7_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST8_OBJ = $(TEST8_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST9_OBJ = $(TEST9_SRC:%.c=$(BUILD_DIR)/%.o)
+TEST10_OBJ = $(TEST10_SRC:%.c=$(BUILD_DIR)/%.o)
 
 all: build
 
@@ -82,11 +86,14 @@ $(BUILD_DIR)/test_phase8: $(CORE_OBJ) $(TEST8_OBJ)
 $(BUILD_DIR)/test_phase9: $(CORE_OBJ) $(TEST9_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+$(BUILD_DIR)/test_phase10: $(CORE_OBJ) $(TEST10_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 $(BUILD_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/test_phase5 $(BUILD_DIR)/test_phase6 $(BUILD_DIR)/test_phase7 $(BUILD_DIR)/test_phase8 $(BUILD_DIR)/test_phase9 $(BUILD_DIR)/astraphosvc
+test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3 $(BUILD_DIR)/test_phase4 $(BUILD_DIR)/test_phase5 $(BUILD_DIR)/test_phase6 $(BUILD_DIR)/test_phase7 $(BUILD_DIR)/test_phase8 $(BUILD_DIR)/test_phase9 $(BUILD_DIR)/test_phase10 $(BUILD_DIR)/astraphosvc
 	$(BUILD_DIR)/test_phase1
 	$(BUILD_DIR)/test_phase2
 	$(BUILD_DIR)/test_phase3
@@ -96,6 +103,7 @@ test: $(BUILD_DIR)/test_phase1 $(BUILD_DIR)/test_phase2 $(BUILD_DIR)/test_phase3
 	$(BUILD_DIR)/test_phase7
 	$(BUILD_DIR)/test_phase8
 	$(BUILD_DIR)/test_phase9
+	$(BUILD_DIR)/test_phase10
 	sh tests/integration/test_phase1_cli.sh $(BUILD_DIR)/astraphosvc
 
 install: build
