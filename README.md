@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 5 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
+Current status: Phase 6 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branching: create, list, switch branches) + Phase 6 (merge engine: fast-forward, merge-base detection, three-way tree comparison). Packfiles, remotes, and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -94,6 +94,7 @@ astraphosvc log
 astraphosvc branch
 astraphosvc branch feature-x
 astraphosvc checkout feature-x
+astraphosvc merge feature-x
 ```
 
 Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in `docs/cli-reference.md` but intentionally return an error until their phases are implemented.
@@ -108,6 +109,7 @@ Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in
 | Git index | Implemented | Phase 3. |
 | Commits & refs | Implemented | Phase 4. |
 | Branching | Implemented | Phase 5. |
+| Merge engine | Implemented | Phase 6. |
 | Git packfiles | Planned | Phase 9 target. |
 | Git protocol | Planned | Phase 8 and Phase 10 target. |
 
@@ -137,15 +139,19 @@ Implemented:
 - `astraphosvc branch <name>` — create a branch at HEAD
 - `astraphosvc checkout <branch>` — switch to a branch
 - Branch ref management (create, list, switch, delete)
+- `astraphosvc merge <branch>` — merge a branch into current
+- Fast-forward merge detection
+- Merge-base (LCA) computation
+- Three-way tree comparison
 - unit and integration test targets
 
 Planned:
 
-- Merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
+- Diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index (staging area); Phase 4 added commits and refs; Phase 5 added branching.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching; Phase 6 added merge.
 
 ## FAQ
 

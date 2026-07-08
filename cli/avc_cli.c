@@ -24,6 +24,7 @@ static void print_help(void) {
     puts("  commit -m <message>     Record changes to the repository");
     puts("  branch [name]           List branches or create a new branch");
     puts("  checkout <branch>       Switch to a branch");
+    puts("  merge <branch>          Merge a branch into the current branch");
     puts("  log                     Show commit history");
     puts("  version                 Print version information");
     puts("  help                    Print this help text");
@@ -616,6 +617,115 @@ static int command_checkout(int argc, char **argv) {
     return 0;
 }
 
+static int command_merge(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "astraphosvc: usage: merge <branch>\n");
+        return 1;
+    }
+
+    const char *branch_name = argv[2];
+    avc_error error;
+    avc_error_clear(&error);
+
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    size_t rlen = strlen("refs/heads/") + strlen(branch_name) + 1;
+    char *refname = (char *)malloc(rlen);
+    if (refname == NULL) {
+        fprintf(stderr, "astraphosvc: out of memory\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+    snprintf(refname, rlen, "refs/heads/%s", branch_name);
+
+    avc_oid branch_oid;
+    avc_error_clear(&error);
+    status = avc_refs_read_ref(repo.metadata_path, refname, branch_oid,
+                               &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: branch '%s' does not exist\n",
+                branch_name);
+        free(refname);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+    free(refname);
+
+    avc_oid head_oid;
+    avc_error_clear(&error);
+    status = avc_refs_resolve_head(repo.metadata_path, head_oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: nothing to merge onto (no commits)\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid result_oid;
+    int was_ff = 0;
+    avc_error_clear(&error);
+    status = avc_merge(&odb, repo.metadata_path, head_oid, branch_oid,
+                        result_oid, &was_ff, &error);
+    if (status == AVC_ERR_CONFLICT) {
+        fprintf(stderr, "astraphosvc: merge conflict in '%s'\n",
+                error.message);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: merge failed: %s\n", error.message);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char *current_branch = NULL;
+    avc_error_clear(&error);
+    avc_refs_current_branch(repo.metadata_path, &current_branch, &error);
+
+    if (current_branch != NULL) {
+        rlen = strlen("refs/heads/") + strlen(current_branch) + 1;
+        refname = (char *)malloc(rlen);
+        if (refname != NULL) {
+            snprintf(refname, rlen, "refs/heads/%s", current_branch);
+            avc_refs_write_ref(repo.metadata_path, refname, result_oid,
+                               &error);
+            free(refname);
+        }
+        free(current_branch);
+    }
+
+    char hex[AVC_OID_HEX_SIZE];
+    avc_oid_hex(result_oid, hex);
+
+    if (was_ff) {
+        printf("Merge: fast-forward (%s)\n", hex);
+    } else {
+        printf("Merge: made merge commit (%s)\n", hex);
+    }
+
+    avc_odb_close(&odb);
+    avc_repository_free(&repo);
+    return 0;
+}
+
 int avc_cli_main(int argc, char **argv) {
     avc_log_from_environment();
     if (argc < 2 || strcmp(argv[1], "help") == 0 ||
@@ -648,6 +758,9 @@ int avc_cli_main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "checkout") == 0) {
         return command_checkout(argc, argv);
+    }
+    if (strcmp(argv[1], "merge") == 0) {
+        return command_merge(argc, argv);
     }
 
     fprintf(stderr, "astraphosvc: command '%s' is not yet implemented\n",

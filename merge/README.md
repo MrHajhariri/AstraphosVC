@@ -1,3 +1,3 @@
 # merge/
 
-Status: planned for Phase 6. Merge APIs will be documented before implementation.
+Status: Phase 6 implemented. Supports fast-forward merges, merge-base detection, and three-way tree comparison.

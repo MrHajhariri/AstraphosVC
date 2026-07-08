@@ -15,7 +15,8 @@ typedef enum avc_status {
     AVC_ERR_IO,
     AVC_ERR_PARSE,
     AVC_ERR_NO_MEMORY,
-    AVC_ERR_UNSUPPORTED
+    AVC_ERR_UNSUPPORTED,
+    AVC_ERR_CONFLICT
 } avc_status;
 
 typedef struct avc_error {

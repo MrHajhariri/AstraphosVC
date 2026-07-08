@@ -57,6 +57,8 @@ const char *avc_status_name(avc_status status) {
         return "no-memory";
     case AVC_ERR_UNSUPPORTED:
         return "unsupported";
+    case AVC_ERR_CONFLICT:
+        return "conflict";
     default:
         return "unknown";
     }

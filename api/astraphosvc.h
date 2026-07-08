@@ -6,6 +6,7 @@
 #include "config/avc_config.h"
 #include "hashing/avc_hash.h"
 #include "index/avc_index.h"
+#include "merge/avc_merge.h"
 #include "objects/avc_oid.h"
 #include "objects/avc_object.h"
 #include "refs/avc_refs.h"
