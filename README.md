@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 3 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Git-compatible v2 index with `add` and `status` commands. Commits, branches, merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
+Current status: Phase 4 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -87,9 +87,13 @@ Implemented today:
 astraphosvc init
 astraphosvc help
 astraphosvc version
+astraphosvc add <file>
+astraphosvc status
+astraphosvc commit -m "message"
+astraphosvc log
 ```
 
-Planned workflows such as `add`, `commit`, `status`, `diff`, `clone`, `fetch`, and `push` are documented in `docs/cli-reference.md` but intentionally return an error until their phases are implemented.
+Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in `docs/cli-reference.md` but intentionally return an error until their phases are implemented.
 
 ## Compatibility Matrix
 
@@ -98,7 +102,8 @@ Planned workflows such as `add`, `commit`, `status`, `diff`, `clone`, `fetch`, a
 | `.avc/` repositories | Implemented | Phase 1 repository creation and discovery. |
 | Existing `.git/` repositories | Planned | Design documented; not implemented. |
 | Object database | Implemented | SHA-1, zlib, flat hash-addressed storage, all 4 object types. |
-| Git index | Planned | Phase 3 target. |
+| Git index | Implemented | Phase 3. |
+| Commits & refs | Implemented | Phase 4. |
 | Git packfiles | Planned | Phase 9 target. |
 | Git protocol | Planned | Phase 8 and Phase 10 target. |
 
@@ -120,15 +125,19 @@ Implemented:
 - `astraphosvc add <path>` — stage files
 - `astraphosvc status` — show staged/modified/deleted files
 - Stat cache for fast status checks
+- Commit engine (tree builder, commit creation, parent chain)
+- Refs module (HEAD symbolic/detached, branch refs read/write/resolve)
+- `astraphosvc commit -m <message>` — create commits
+- `astraphosvc log` — display commit history
 - unit and integration test targets
 
 Planned:
 
-- Index, commits, branches, merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
+- Branches, merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 is the index (staging area).
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index (staging area); Phase 4 added commits and refs.
 
 ## FAQ
 
