@@ -1,22 +1,26 @@
 # CLI Reference
 
-Implemented in Phase 1:
+Implemented:
 
 ```sh
 astraphosvc init [path]
+astraphosvc add <path>...
+astraphosvc status
 astraphosvc version
 astraphosvc help
 ```
 
-`init` creates a native `.avc/` repository. If no path is provided, the current directory is used.
+- `init [path]` — creates a native `.avc/` repository (default: current directory).
+- `add <path>...` — stages file contents into the object database and records them in the index.
+- `status` — shows staged files, modified files (stat/size/hash change), and deleted files.
+- `version` — prints version information.
+- `help` — prints available commands.
 
 Planned commands:
 
 ```sh
 astraphosvc clone
-astraphosvc add
 astraphosvc commit
-astraphosvc status
 astraphosvc diff
 astraphosvc log
 astraphosvc branch

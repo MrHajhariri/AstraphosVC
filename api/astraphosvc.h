@@ -4,6 +4,7 @@
 #include "compression/avc_compress.h"
 #include "config/avc_config.h"
 #include "hashing/avc_hash.h"
+#include "index/avc_index.h"
 #include "objects/avc_oid.h"
 #include "objects/avc_object.h"
 #include "repository/avc_repository.h"

@@ -6,11 +6,15 @@ Implemented: repository initialization, config system, repository discovery, obj
 
 ## Phase 2: Object Database
 
-Planned: blob, tree, commit, and tag objects with binary storage, compression, object IDs, and integrity verification.
+Implemented: SHA-1 hashing, zlib compression, blob/tree/commit/tag storage with integrity verification.
 
 ## Phase 3: Index
 
-Planned: Git-compatible staging area concepts, file hashing, change detection, and fast index loading.
+Implemented: Git-compatible v2 staging area, `add` and `status` commands, stat cache, change detection.
+
+## Phase 4: Commit Engine
+
+Planned: commit creation, history traversal, branch pointers, and detached HEAD support.
 
 ## Phase 4: Commit Engine
 

@@ -20,3 +20,13 @@
 - Added Phase 2 unit tests covering SHA-1 vectors, OID round-trips, compression round-trips, and object read/write for all types.
 - Updated repository init to produce flat object layout.
 - Added `objects_path` field to repository struct.
+
+## Phase 3
+
+- Implemented Git-compatible v2 index format (DIRC header, sorted entries, SHA-1 trailer).
+- Added `astraphosvc add <path>` — stages file content into blob objects and records in index.
+- Added `astraphosvc status` — shows staged, modified, and deleted files.
+- Added stat cache for fast change detection (dev, ino, size, mtime).
+- Added `avc_fs_stat` helper and `avc_file_stat` type.
+- Added Phase 3 unit tests for index add/find/remove, sorted insert, write/load round-trip, and nonexistent index load.
+- Updated build system, API header, and documentation.

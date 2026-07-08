@@ -14,6 +14,7 @@ add_library(astraphosvc_core
     compression/avc_compress.c
     config/avc_config.c
     hashing/avc_hash.c
+    index/avc_index.c
     objects/avc_oid.c
     objects/avc_object.c
     repository/avc_repository.c
@@ -57,6 +58,15 @@ if(ASTRAPHOSVC_BUILD_TESTS)
         $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
     )
     add_test(NAME phase2-unit COMMAND test_phase2)
+
+    add_executable(test_phase3
+        tests/unit/test_phase3.c
+    )
+    target_link_libraries(test_phase3 PRIVATE astraphosvc_core)
+    target_compile_options(test_phase3 PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
+    )
+    add_test(NAME phase3-unit COMMAND test_phase3)
 
     add_test(NAME phase1-cli-version COMMAND astraphosvc version)
     set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 0.1.0")

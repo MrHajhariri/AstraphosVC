@@ -205,6 +205,24 @@ char *avc_fs_parent(const char *path) {
     return copy;
 }
 
+int avc_fs_stat(const char *path, avc_file_stat *statbuf) {
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return -1;
+    }
+    if (statbuf != NULL) {
+        statbuf->dev = (uint32_t)st.st_dev;
+        statbuf->ino = (uint32_t)st.st_ino;
+        statbuf->mode = (uint32_t)st.st_mode;
+        statbuf->uid = (uint32_t)st.st_uid;
+        statbuf->gid = (uint32_t)st.st_gid;
+        statbuf->size = (uint32_t)st.st_size;
+        statbuf->ctime_sec = (uint32_t)st.st_ctime;
+        statbuf->mtime_sec = (uint32_t)st.st_mtime;
+    }
+    return 0;
+}
+
 char *avc_fs_current_directory(avc_error *error) {
     size_t size = 256;
     for (;;) {
