@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "cli/avc_cli.h"
 
 #include "api/astraphosvc.h"
@@ -7,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 
 static void print_help(void) {
     puts("AstraphosVC - modern distributed version control");
@@ -18,6 +21,8 @@ static void print_help(void) {
     puts("  init [path]             Initialize an AstraphosVC repository");
     puts("  add <path>              Stage file content");
     puts("  status                  Show working tree status");
+    puts("  commit -m <message>     Record changes to the repository");
+    puts("  log                     Show commit history");
     puts("  version                 Print version information");
     puts("  help                    Print this help text");
     puts("");
@@ -268,6 +273,206 @@ static int command_status(int argc, char **argv) {
     return 0;
 }
 
+static avc_status get_signature(avc_signature *sig, const char *name_env,
+                                const char *email_env, avc_error *error) {
+    (void)error;
+    const char *name = getenv(name_env);
+    const char *email = getenv(email_env);
+    if (name == NULL) name = getenv("GIT_AUTHOR_NAME");
+    if (email == NULL) email = getenv("GIT_AUTHOR_EMAIL");
+    if (name == NULL) name = "Astraphos User";
+    if (email == NULL) email = "user@astraphosvc";
+
+    snprintf(sig->name, sizeof(sig->name), "%s", name);
+    snprintf(sig->email, sizeof(sig->email), "%s", email);
+    sig->timestamp = time(NULL);
+
+    struct tm lt;
+    localtime_r(&sig->timestamp, &lt);
+    char tz_str[16];
+    strftime(tz_str, sizeof(tz_str), "%z", &lt);
+    int h = 0, m = 0;
+    sscanf(tz_str, "%3d%2d", &h, &m);
+    sig->tz_offset = h * 60 + (h < 0 ? -m : m);
+
+    return AVC_OK;
+}
+
+static int command_commit(int argc, char **argv) {
+    const char *message = NULL;
+
+    for (int i = 2; i < argc - 1; i++) {
+        if (strcmp(argv[i], "-m") == 0) {
+            message = argv[i + 1];
+            break;
+        }
+    }
+    if (message == NULL) {
+        fprintf(stderr, "astraphosvc: usage: commit -m <message>\n");
+        return 1;
+    }
+
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char *index_path = avc_fs_join(repo.metadata_path, "index");
+    if (index_path == NULL) {
+        fprintf(stderr, "astraphosvc: out of memory\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_index index;
+    avc_index_init(&index);
+    status = avc_index_load(&index, index_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to load index: %s\n",
+                error.message);
+        free(index_path);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    if (index.count == 0) {
+        fprintf(stderr, "astraphosvc: nothing to commit (add files first)\n");
+        avc_index_free(&index);
+        free(index_path);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid tree_oid;
+    avc_error_clear(&error);
+    status = avc_commit_build_tree(&odb, &index, tree_oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to build tree: %s\n",
+                error.message);
+        avc_index_free(&index);
+        free(index_path);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_signature author, committer;
+    avc_error_clear(&error);
+    get_signature(&author, "ASTRAPHOSVC_AUTHOR_NAME",
+                  "ASTRAPHOSVC_AUTHOR_EMAIL", &error);
+    get_signature(&committer, "ASTRAPHOSVC_COMMITTER_NAME",
+                  "ASTRAPHOSVC_COMMITTER_EMAIL", &error);
+
+    avc_oid parent_oids[16];
+    int parent_count = 0;
+
+    avc_oid head_oid;
+    avc_error_clear(&error);
+    status = avc_refs_resolve_head(repo.metadata_path, head_oid, &error);
+    if (status == AVC_OK) {
+        memcpy(parent_oids[0], head_oid, 20);
+        parent_count = 1;
+    }
+
+    avc_oid commit_oid;
+    avc_error_clear(&error);
+    status = avc_commit_create(&odb, tree_oid, (const avc_oid *)parent_oids, parent_count,
+                               &author, &committer, message,
+                               commit_oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: failed to create commit: %s\n",
+                error.message);
+        avc_index_free(&index);
+        free(index_path);
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    char *ref_or_oid = NULL;
+    int is_symbolic;
+    avc_error_clear(&error);
+    status = avc_refs_read_head(repo.metadata_path, &ref_or_oid,
+                                &is_symbolic, &error);
+    if (status == AVC_OK && is_symbolic) {
+        avc_refs_write_ref(repo.metadata_path, ref_or_oid, commit_oid,
+                           &error);
+        free(ref_or_oid);
+    } else {
+        avc_refs_write_head_oid(repo.metadata_path, commit_oid, &error);
+        free(ref_or_oid);
+    }
+
+    char hex[AVC_OID_HEX_SIZE];
+    avc_oid_hex(commit_oid, hex);
+    printf("[commit %s] %s\n", hex, message);
+
+    avc_index_free(&index);
+    free(index_path);
+    avc_odb_close(&odb);
+    avc_repository_free(&repo);
+    return 0;
+}
+
+static int command_log(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
+    avc_error error;
+    avc_error_clear(&error);
+    avc_repository repo = {0};
+    avc_status status = avc_repository_discover(NULL, &repo, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        return 1;
+    }
+
+    avc_odb odb;
+    avc_odb_init(&odb);
+    status = avc_odb_open(&odb, repo.objects_path, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: %s\n", error.message);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_oid head_oid;
+    avc_error_clear(&error);
+    status = avc_refs_resolve_head(repo.metadata_path, head_oid, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: no commits yet\n");
+        avc_odb_close(&odb);
+        avc_repository_free(&repo);
+        return 1;
+    }
+
+    avc_error_clear(&error);
+    status = avc_commit_log(&odb, head_oid, 32, &error);
+    if (status != AVC_OK) {
+        fprintf(stderr, "astraphosvc: log error: %s\n", error.message);
+    }
+
+    avc_odb_close(&odb);
+    avc_repository_free(&repo);
+    return status == AVC_OK ? 0 : 1;
+}
+
 int avc_cli_main(int argc, char **argv) {
     avc_log_from_environment();
     if (argc < 2 || strcmp(argv[1], "help") == 0 ||
@@ -288,6 +493,12 @@ int avc_cli_main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "status") == 0) {
         return command_status(argc, argv);
+    }
+    if (strcmp(argv[1], "commit") == 0) {
+        return command_commit(argc, argv);
+    }
+    if (strcmp(argv[1], "log") == 0) {
+        return command_log(argc, argv);
     }
 
     fprintf(stderr, "astraphosvc: command '%s' is not yet implemented\n",

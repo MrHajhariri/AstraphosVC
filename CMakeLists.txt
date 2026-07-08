@@ -11,12 +11,14 @@ option(ASTRAPHOSVC_BUILD_TESTS "Build AstraphosVC tests" ON)
 find_package(ZLIB REQUIRED)
 
 add_library(astraphosvc_core
+    commits/avc_commit.c
     compression/avc_compress.c
     config/avc_config.c
     hashing/avc_hash.c
     index/avc_index.c
     objects/avc_oid.c
     objects/avc_object.c
+    refs/avc_refs.c
     repository/avc_repository.c
     utils/avc_error.c
     utils/avc_fs.c
@@ -67,6 +69,15 @@ if(ASTRAPHOSVC_BUILD_TESTS)
         $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
     )
     add_test(NAME phase3-unit COMMAND test_phase3)
+
+    add_executable(test_phase4
+        tests/unit/test_phase4.c
+    )
+    target_link_libraries(test_phase4 PRIVATE astraphosvc_core)
+    target_compile_options(test_phase4 PRIVATE
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Werror>
+    )
+    add_test(NAME phase4-unit COMMAND test_phase4)
 
     add_test(NAME phase1-cli-version COMMAND astraphosvc version)
     set_tests_properties(phase1-cli-version PROPERTIES PASS_REGULAR_EXPRESSION "AstraphosVC 0.1.0")
