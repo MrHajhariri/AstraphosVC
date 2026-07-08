@@ -2,7 +2,7 @@
 
 AstraphosVC is a modern distributed version control system written from scratch in C. It is part of the Astraphos ecosystem and uses `astraphosvc` as its primary binary and `.avc/` as its repository metadata directory.
 
-Current status: Phase 4 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status` commands) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
+Current status: Phase 5 is implemented. Phase 1 (repository init, config, discovery, CLI) + Phase 2 (SHA-1, zlib, object database) + Phase 3 (Git-compatible v2 index with `add` and `status`) + Phase 4 (commit engine, refs/HEAD, `commit -m`, `log`) + Phase 5 (branches, checkout, `branch`, `checkout`). Merge, packfiles, remotes, and Git compatibility are designed but not yet implemented.
 
 ## Goals
 
@@ -91,6 +91,9 @@ astraphosvc add <file>
 astraphosvc status
 astraphosvc commit -m "message"
 astraphosvc log
+astraphosvc branch
+astraphosvc branch feature-x
+astraphosvc checkout feature-x
 ```
 
 Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in `docs/cli-reference.md` but intentionally return an error until their phases are implemented.
@@ -104,6 +107,7 @@ Planned workflows such as `diff`, `clone`, `fetch`, and `push` are documented in
 | Object database | Implemented | SHA-1, zlib, flat hash-addressed storage, all 4 object types. |
 | Git index | Implemented | Phase 3. |
 | Commits & refs | Implemented | Phase 4. |
+| Branches | Implemented | Phase 5. |
 | Git packfiles | Planned | Phase 9 target. |
 | Git protocol | Planned | Phase 8 and Phase 10 target. |
 
@@ -129,15 +133,19 @@ Implemented:
 - Refs module (HEAD symbolic/detached, branch refs read/write/resolve)
 - `astraphosvc commit -m <message>` — create commits
 - `astraphosvc log` — display commit history
+- `astraphosvc branch` — list branches
+- `astraphosvc branch <name>` — create a branch at current HEAD
+- `astraphosvc checkout <branch>` — switch to an existing branch
+- Branch API (list, current, delete)
 - unit and integration test targets
 
 Planned:
 
-- Branches, merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
+- Merge, diff, remotes, packfiles, Git compatibility, hooks, signing, plugins.
 
 ## Roadmap
 
-The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index (staging area); Phase 4 added commits and refs.
+The detailed roadmap is in `ROADMAP.md`. Phase 3 added the index; Phase 4 added commits and refs; Phase 5 added branching and checkout.
 
 ## FAQ
 
